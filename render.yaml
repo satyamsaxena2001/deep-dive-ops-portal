@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: cluster-flag-viewer
+    name: deep-dive-ops-portal
     runtime: node
     plan: free
     branch: main
