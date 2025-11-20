@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cluster Flag Viewer - No CORS</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .badge {
+            background: #28a745;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .config-section {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .info-box {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            color: #155724;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+            font-size: 14px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+        .checkbox-group {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .checkbox-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover { transform: translateY(-2px); }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .secondary-btn { background: #17a2b8; }
+        .export-btn { background: #28a745; }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error, .success, .warning {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .error { background: #f8d7da; color: #721c24; }
+        .success { background: #d4edda; color: #155724; }
+        .warning { background: #fff3cd; color: #856404; }
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        .results-section { padding: 30px; }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-card h3 { font-size: 32px; margin-bottom: 5px; }
+        .stat-card p { font-size: 14px; opacity: 0.9; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        thead {
+            background: #667eea;
+            color: white;
+        }
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        tbody tr:hover { background: #f8f9fa; }
+        .override-true { color: #28a745; font-weight: 600; }
+        .override-false { color: #6c757d; }
+        .table-wrapper {
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+        }
+        .filter-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .state-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .state-active { background: #d4edda; color: #155724; }
+        .state-failed { background: #f8d7da; color: #721c24; }
+        .state-delete { background: #fff3cd; color: #856404; }
+        small { color: #6c757d; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Cluster Flag Viewer <span class="badge">✓ NO CORS</span></h1>
+            <p>Using Local Proxy Server - No Extensions Needed</p>
+        </div>
+
+        <div class="config-section">
+            <div class="info-box">
+                <p><strong>✅ Proxy server active - No CORS issues!</strong></p>
+                <p>All requests go through localhost:3000 proxy server</p>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="baseUrl">Base URL</label>
+                    <input type="text" id="baseUrl" 
+                           value="https://life-cycle-manager.internal.thoughtspot.cloud/api/v2/clusters">
+                </div>
+                <div class="form-group">
+                    <label for="flagName">Flag Name</label>
+                    <input type="text" id="flagName" placeholder="e.g., mx, useConfluent">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Cluster States</label>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="stateActive" checked>
+                        <label for="stateActive">Active</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="stateFailed">
+                        <label for="stateFailed">Failed</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="stateDelete">
+                        <label for="stateDelete">Delete</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="authHeader">Authorization (Optional)</label>
+                <input type="password" id="authHeader" placeholder="Basic xxxxx or leave empty">
+                <small>Leave empty to use browser session</small>
+            </div>
+
+            <div class="form-group">
+                <label for="userEmail">User Email (Optional)</label>
+                <input type="email" id="userEmail" placeholder="your.email@company.com">
+            </div>
+
+            <div id="messageBox"></div>
+
+            <button onclick="fetchClusters()" id="fetchBtn" class="secondary-btn">
+                🗂️ Step 1: Fetch Clusters
+            </button>
+            <button onclick="searchFlags()" id="searchBtn" disabled>
+                🚀 Step 2: Search Flags
+            </button>
+            <button onclick="exportCSV()" id="exportBtn" class="export-btn" style="display: none;">
+                📥 Export CSV
+            </button>
+
+            <div id="progressSection" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill">0%</div>
+                </div>
+                <p id="progressText" style="text-align: center; color: #667eea; font-weight: 600;"></p>
+            </div>
+        </div>
+
+        <div class="results-section" id="resultsSection" style="display: none;">
+            <input type="text" id="filterInput" class="filter-input" 
+                   placeholder="Filter results..." oninput="filterResults()">
+            <div class="stats" id="statsSection"></div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Cluster ID</th>
+                            <th>State</th>
+                            <th>Service</th>
+                            <th>Task</th>
+                            <th>Flag</th>
+                            <th>Value</th>
+                            <th>Overridden</th>
+                            <th>Type</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="loadingSection" style="display: none;">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p id="loadingText">Processing...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const PROXY_URL = '/api/proxy';
+        let allClusterIds = [];
+        let clusterStateMap = {};
+        let allResults = [];
+        let filteredResults = [];
+
+        async function proxyFetch(url, headers = {}) {
+            const response = await fetch(PROXY_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url, headers })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Proxy request failed');
+            }
+
+            return response.json();
+        }
+
+        async function fetchClusters() {
+            const baseUrl = document.getElementById('baseUrl').value.trim();
+            const authHeader = document.getElementById('authHeader').value.trim();
+            const userEmail = document.getElementById('userEmail').value.trim();
+
+            if (!baseUrl) {
+                showMessage('Enter base URL', 'error');
+                return;
+            }
+
+            const states = [];
+            if (document.getElementById('stateActive').checked) 
+                states.push({ query: 'active=true', name: 'Active' });
+            if (document.getElementById('stateFailed').checked) 
+                states.push({ query: 'operationalStateStatus=FAILED', name: 'Failed' });
+            if (document.getElementById('stateDelete').checked) 
+                states.push({ query: 'operationalState=DELETE', name: 'Delete' });
+
+            if (!states.length) {
+                showMessage('Select at least one state', 'warning');
+                return;
+            }
+
+            showLoading('Fetching clusters via proxy...');
+            document.getElementById('progressSection').style.display = 'block';
+
+            allClusterIds = [];
+            clusterStateMap = {};
+            const startTime = Date.now();
+
+            try {
+                const headers = {};
+                if (authHeader) headers['authorization'] = authHeader;
+                if (userEmail) headers['user-email'] = userEmail;
+
+                const promises = states.map(state =>
+                    proxyFetch(`${baseUrl}/state?${state.query}&page=-1`, headers)
+                        .then(data => ({ state, data }))
+                        .catch(err => ({ state, error: err }))
+                );
+
+                const results = await Promise.all(promises);
+
+                results.forEach(({ state, data, error }) => {
+                    if (error) {
+                        console.error(`Error ${state.name}:`, error);
+                        return;
+                    }
+
+                    const ids = parseClusterIds(data);
+                    ids.forEach(id => {
+                        if (!allClusterIds.includes(id)) {
+                            allClusterIds.push(id);
+                            clusterStateMap[id] = state.name;
+                        }
+                    });
+                });
+
+                const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+                hideLoading();
+                document.getElementById('progressSection').style.display = 'none';
+
+                if (!allClusterIds.length) {
+                    showMessage('No clusters found. Check auth credentials.', 'error');
+                    return;
+                }
+
+                showMessage(`✅ Fetched ${allClusterIds.length} clusters in ${elapsed}s`, 'success');
+                document.getElementById('searchBtn').disabled = false;
+
+            } catch (error) {
+                hideLoading();
+                document.getElementById('progressSection').style.display = 'none';
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        function parseClusterIds(data) {
+            if (!data) return [];
+            const ids = [];
+
+            if (Array.isArray(data)) {
+                data.forEach(c => ids.push(c.clusterId || c.id));
+            } else if (data.clusters) {
+                data.clusters.forEach(c => ids.push(c.clusterId || c.id));
+            } else if (data.content) {
+                data.content.forEach(c => ids.push(c.clusterId || c.id));
+            } else if (data.items) {
+                data.items.forEach(c => ids.push(c.clusterId || c.id));
+            } else if (data.data) {
+                data.data.forEach(c => ids.push(c.clusterId || c.id));
+            }
+
+            return ids.filter(Boolean);
+        }
+
+        async function searchFlags() {
+            const baseUrl = document.getElementById('baseUrl').value.trim();
+            const flagName = document.getElementById('flagName').value.trim();
+            const authHeader = document.getElementById('authHeader').value.trim();
+            const userEmail = document.getElementById('userEmail').value.trim();
+
+            if (!flagName) {
+                showMessage('Enter flag name', 'error');
+                return;
+            }
+
+            showLoading('Searching clusters...');
+            document.getElementById('progressSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+
+            allResults = [];
+            const startTime = Date.now();
+            let processed = 0;
+            const concurrency = 20;
+
+            try {
+                const headers = {};
+                if (authHeader) headers['authorization'] = authHeader;
+                if (userEmail) headers['user-email'] = userEmail;
+
+                for (let i = 0; i < allClusterIds.length; i += concurrency) {
+                    const batch = allClusterIds.slice(i, i + concurrency);
+
+                    const promises = batch.map(clusterId =>
+                        proxyFetch(`${baseUrl}/${clusterId}/overrides`, headers)
+                            .then(data => processCluster(data, clusterId, flagName))
+                            .catch(() => [])
+                    );
+
+                    const batchResults = await Promise.all(promises);
+                    batchResults.forEach(results => allResults.push(...results));
+
+                    processed += batch.length;
+                    const percent = Math.round((processed / allClusterIds.length) * 100);
+                    document.getElementById('progressFill').style.width = percent + '%';
+                    document.getElementById('progressFill').textContent = percent + '%';
+                    document.getElementById('progressText').textContent =
+                        `${processed}/${allClusterIds.length} clusters • ${allResults.length} matches`;
+                }
+
+                const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+                const rate = (allClusterIds.length / elapsed).toFixed(1);
+
+                hideLoading();
+                document.getElementById('progressSection').style.display = 'none';
+
+                filteredResults = [...allResults];
+                displayResults(elapsed, rate);
+
+            } catch (error) {
+                hideLoading();
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        function processCluster(data, clusterId, flagName) {
+            const matches = [];
+
+            if (data.services) {
+                data.services.forEach(service => {
+                    service.tasks?.forEach(task => {
+                        task.flags?.forEach(flag => {
+                            if (flag.key === flagName) {
+                                matches.push({
+                                    clusterId: data.clusterId || clusterId,
+                                    clusterState: clusterStateMap[clusterId] || 'Unknown',
+                                    serviceName: service.name,
+                                    taskName: task.name,
+                                    flagName: flag.key,
+                                    value: flag.value,
+                                    overridden: flag.overridden,
+                                    type: flag.type
+                                });
+                            }
+                        });
+                    });
+                });
+            }
+
+            return matches;
+        }
+
+        function displayResults(elapsed, rate) {
+            if (!allResults.length) {
+                showMessage('No matches found', 'warning');
+                return;
+            }
+
+            const overridden = allResults.filter(r => r.overridden).length;
+            const uniqueClusters = new Set(allResults.map(r => r.clusterId)).size;
+
+            document.getElementById('statsSection').innerHTML = `
+                <div class="stat-card"><h3>${allResults.length}</h3><p>Matches</p></div>
+                <div class="stat-card"><h3>${overridden}</h3><p>Overridden</p></div>
+                <div class="stat-card"><h3>${uniqueClusters}</h3><p>Clusters</p></div>
+                <div class="stat-card"><h3>${elapsed}s</h3><p>${rate}/sec</p></div>
+            `;
+
+            renderTable(filteredResults);
+            document.getElementById('resultsSection').style.display = 'block';
+            document.getElementById('exportBtn').style.display = 'inline-block';
+            showMessage(`✅ Found ${allResults.length} matches in ${elapsed}s`, 'success');
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('resultsBody');
+            tbody.innerHTML = data.map(r => `
+                <tr>
+                    <td>${r.clusterId}</td>
+                    <td><span class="state-badge state-${r.clusterState.toLowerCase()}">${r.clusterState}</span></td>
+                    <td><strong>${r.serviceName}</strong></td>
+                    <td>${r.taskName}</td>
+                    <td><code>${r.flagName}</code></td>
+                    <td><code>${r.value || '(empty)'}</code></td>
+                    <td class="${r.overridden ? 'override-true' : 'override-false'}">
+                        ${r.overridden ? '✓ YES' : '✗ NO'}
+                    </td>
+                    <td>${r.type}</td>
+                </tr>
+            `).join('');
+        }
+
+        function filterResults() {
+            const filter = document.getElementById('filterInput').value.toLowerCase();
+            filteredResults = filter ?
+                allResults.filter(r =>
+                    r.clusterId.toLowerCase().includes(filter) ||
+                    r.serviceName.toLowerCase().includes(filter) ||
+                    r.taskName.toLowerCase().includes(filter) ||
+                    r.value.toLowerCase().includes(filter)
+                ) : [...allResults];
+            renderTable(filteredResults);
+        }
+
+        function exportCSV() {
+            const headers = ['Cluster ID', 'State', 'Service', 'Task', 'Flag', 'Value', 'Overridden', 'Type'];
+            const csv = [
+                headers.join(','),
+                ...allResults.map(r => [
+                    `"${r.clusterId}"`, `"${r.clusterState}"`, `"${r.serviceName}"`,
+                    `"${r.taskName}"`, `"${r.flagName}"`, `"${r.value}"`,
+                    r.overridden, `"${r.type}"`
+                ].join(','))
+            ].join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `flags_${document.getElementById('flagName').value}_${Date.now()}.csv`;
+            link.click();
+        }
+
+        function showMessage(msg, type) {
+            const box = document.getElementById('messageBox');
+            box.className = type;
+            box.textContent = msg;
+            box.style.display = 'block';
+            if (type !== 'error') setTimeout(() => box.style.display = 'none', 5000);
+        }
+
+        function showLoading(text) {
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('loadingText').textContent = text;
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingSection').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
